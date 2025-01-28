@@ -1,0 +1,243 @@
+#Menentukan Radius Virial
+
+def jarakstandar (ra, rap, dec, decp):
+  delra=np.abs(ra-rap)
+  cos = np.cos(np.radians(dec))*np.cos(np.radians(decp))*np.cos(np.radians(delra))
+  sin = np.sin(np.radians(dec))*np.sin(np.radians(decp))
+  C = sin + cos
+  ar = np.arccos(C)
+  t = np.degrees(ar)
+  return np.tan(ar)*dl*3.086*(10**22)
+
+G = 6.67*(10**-11) #Nm^2/kg
+Msun = 1.99*(10**30)
+CalonA0279['v2m'] = df1['vpec^2']*(10**6)
+
+Gb = 2 * G
+M = []
+Rr = []
+V_values = {}
+my_range = np.arange(12, 331, 10)
+
+for r in my_range:
+    test = CalonA0279[CalonA0279['jarakp'] <= r / 100 ]
+    Rr.append(r / 100)
+    print(len(test))
+    k = 150*np.pi * len(test)
+
+    # Filter nilai 'v2m' values berdasarkan kondisi r
+    v = test[test['jarakp'] <= r/100]['v2m'].sum()
+
+    # masukan nilai 'v' ke V_values
+    V_values[r/100] = v
+
+    g = 0  # Reset 'g' untuk setiap 'r'
+
+    for i in range(len(test)):
+        for j in range(len(test)):
+            if i != j:
+                jarakan = jarakstandar(test['ra'].iloc[i], test['ra'].iloc[j], test['dec'].iloc[i], test['dec'].iloc[j])
+                if jarakan != 0:
+                    g += 1 / jarakan
+    # Menghilangkan pembagian dengan nol
+    if g != 0:
+        m = k * v / (Gb * g)
+        M.append(m)
+    else:
+        M.append(0)  # Set M to 0 jika dibagi 0
+
+for r, m in zip(Rr, M):
+    v_value = V_values.get(r, 'Not available')
+    print(f"For r = {r}, M = {m}, v = {v_value}")
+
+#Membuat profil massa gugus galaksi
+
+len(M)
+
+Mkor=[]
+for i in range(len(M)):
+  Mkor.append(M[i]/Msun)
+
+plt.plot(Rr, Mkor)
+plt.ylabel('Massa (Msun)')
+plt.xlabel('Radius (Mpc)')
+plt.title('Profil Massa Gugus Galaksi Abell 0279')
+
+#Menormalisasi profil massa dengan M_200
+
+jarak = np.arange(0.1, 3.22, 0.1)
+len(jarak)
+
+h0 = (70.4**2)
+M200 = []
+for i in range (len(jarak)):
+  mm = (100*((jarak[i])**3)*(h0)*(10**6)*(3.086e22))/G
+  M200.append(mm)
+
+mas = []
+for mass in range (len(M200)):
+  ma = M[mass]/M200[mass]
+  mas.append(ma)
+
+tes = pd.DataFrame(dict(
+    x = Rr,
+    y = mas
+))
+
+plt.figure(figsize=(12, 6))
+
+plt.plot(tes['x'], tes['y'], label='Profil Massa Ternormalisasi')
+
+plt.title('Profil Massa Ternormalisasi')
+plt.xlabel('Radius (Mpc)')
+plt.ylabel('M/M_200')
+
+#Mencari nilai M/M_200 = 1
+y_target = 1
+nilai_terdekat = (np.abs(tes['y'] - y_target)).idxmin()
+x_terdekat = tes['x'].iloc[nilai_terdekat]
+y_terdekat = tes['y'].iloc[nilai_terdekat]
+
+# Menandai titik y=1
+plt.scatter(x_terdekat, y_terdekat, color='red')  # Menandai titik dengan warna merah
+plt.text(x_terdekat, y_terdekat, f'({x_terdekat:.2f}, {y_terdekat})', fontsize=9, ha='right')  # Menambahkan teks di dekat titik
+
+# Menambahkan garis horizontal di y = 1
+plt.axhline(y=1, color='b', linestyle='--', label='y = 1')
+
+# Menambahkan garis vertikal di x yang sesuai dengan y = 1
+plt.axvline(x=x_terdekat, color='g', linestyle='--', label=f'x = {x_terdekat:.2f}')
+#plt.grid(True)
+
+plt.xticks(np.arange(0.1, 3.3, 0.1))
+plt.legend()
+plt.show()
+
+print(x_terdekat)
+
+AbellR = 1.5 / (70.4/100)
+AbellR
+
+#Mengimplementasikan radius optimal (dalam hal ini radius virial)
+
+A0279 = A0279.drop_duplicates(subset='objID',keep='first')
+
+%matplotlib inline
+plt.subplots(figsize=(12,6))
+levels = [optimal_level]
+y_vir = np.linspace(-2000,2000,100)
+x_vir = np.ones(100)
+x_tr = np.ones(100)
+CS = plt.contour(RR,VVV,h,levels=levels)
+plt.clabel(CS, inline=1, fontsize=10)
+plt.scatter(df1['jarakp'], df1['vpec'], c=df1['log'], cmap='bwr')
+plt.colorbar()
+plt.xlabel('Jarak Proyeksi (Mpc)')
+plt.ylabel('Vpec(km/s)')
+plt.plot(x_vir*x_terdekat,y_vir,'k--')
+#plt.plot(x_vir*AbellR,y_vir,'k--')
+plt.title('r_200 Optimal')
+
+# Plotting
+plt.subplots(figsize=(12, 6))
+levels = [-9.9]
+y_vir = np.linspace(-2000, 2000, 100)
+x_vir = np.ones(100)
+CS = plt.contour(RR, VVV, h, levels=levels)
+plt.clabel(CS, inline=1, fontsize=10)
+
+# Biru untuk df['log'] >= optimal_level dan df['jarakp'] <= x_terdekat
+plt.scatter(df1['jarakp'][(df1['log'] >= optimal_level) & (df1['jarakp'] <= x_terdekat)],
+            df1['vpec'][(df1['log'] >= optimal_level) & (df1['jarakp'] <= x_terdekat)],
+            c='red',
+            label='Anggota Gugus Galaksi')
+
+# Merah dan df['log'] < optimal_level dan df['jarakp'] > x_terdekat, df['log'] >= optimal_level dan df['jarakp'] > x_terdekat
+# dan df['log'] < optimal_level dan df['jarakp'] < x_terdekat
+plt.scatter(df1['jarakp'][(df1['log'] < optimal_level) & (df1['jarakp'] > x_terdekat)],
+            df1['vpec'][(df1['log'] < optimal_level) & (df1['jarakp'] > x_terdekat)],
+            c='blue')
+plt.scatter(df1['jarakp'][(df1['log'] >= optimal_level) & (df1['jarakp'] > x_terdekat)],
+            df1['vpec'][(df1['log'] >= optimal_level) & (df1['jarakp'] > x_terdekat)],
+            c='blue')
+plt.scatter(df1['jarakp'][(df1['log'] < optimal_level) & (df1['jarakp'] < x_terdekat)],
+            df1['vpec'][(df1['log'] < optimal_level) & (df1['jarakp'] < x_terdekat)],
+            c='blue',
+            label='Bukan Anggota')
+
+plt.xlabel('Jarak Proyeksi (Mpc)')
+plt.ylabel('Vpec (km/s)')
+plt.plot(x_vir * x_terdekat, y_vir, 'k--',c='black', label="r_200")
+#plt.plot(x_tr*0.255,y_vir,'k--',c='green', label="r_turnaround")
+plt.title('Plot Akhir')
+plt.legend()
+plt.show()
+
+
+A0279
+
+#Memberikan batas radius kepada data
+
+%matplotlib inline
+plt.subplots(figsize=(12,6))
+levels = [-9.9]
+y_vir = np.linspace(-2000,2000,100)
+x_vir = np.ones(100)
+x_tr = np.ones(100)
+CS = plt.contour(RR,VVV,h,levels=levels)
+plt.clabel(CS, inline=1, fontsize=10)
+plt.scatter(df1['jarakp'], df1['vpec'], c=df1['log'], cmap='bwr')
+plt.colorbar()
+plt.xlabel('Jarak Proyeksi (Mpc)')
+plt.ylabel('Vpec(km/s)')
+#plt.plot(x_vir*x_terdekat,y_vir,'k--')
+plt.plot(x_vir*AbellR,y_vir,'k-')
+plt.title('R_ Optimal')
+
+#Membuat plot akhir
+
+# Plotting
+plt.subplots(figsize=(12, 6))
+levels = [-9.9]
+y_vir = np.linspace(-2000, 2000, 100)
+x_vir = np.ones(100)
+CS = plt.contour(RR, VVV, h, levels=levels)
+plt.clabel(CS, inline=1, fontsize=10)
+
+# Biru untuk df['log'] >= optimal_level dan df['jarakp'] <= x_terdekat
+plt.scatter(df1['jarakp'][(df1['log'] >= optimal_level) & (df1['jarakp'] <= x_terdekat)],
+            df1['vpec'][(df1['log'] >= optimal_level) & (df1['jarakp'] <= x_terdekat)],
+            c='red',
+            label='Anggota Gugus Galaksi')
+
+# Merah dan df['log'] < optimal_level dan df['jarakp'] > x_terdekat, df['log'] >= optimal_level dan df['jarakp'] > x_terdekat
+# dan df['log'] < optimal_level dan df['jarakp'] < x_terdekat
+plt.scatter(df1['jarakp'][(df1['log'] < optimal_level) & (df1['jarakp'] > x_terdekat)],
+            df1['vpec'][(df1['log'] < optimal_level) & (df1['jarakp'] > x_terdekat)],
+            c='blue')
+plt.scatter(df1['jarakp'][(df1['log'] >= optimal_level) & (df1['jarakp'] > x_terdekat)],
+            df1['vpec'][(df1['log'] >= optimal_level) & (df1['jarakp'] > x_terdekat)],
+            c='blue')
+plt.scatter(df1['jarakp'][(df1['log'] < optimal_level) & (df1['jarakp'] < x_terdekat)],
+            df1['vpec'][(df1['log'] < optimal_level) & (df1['jarakp'] < x_terdekat)],
+            c='blue',
+            label='Bukan Anggota')
+
+plt.xlabel('Jarak Proyeksi (Mpc)')
+plt.ylabel('Vpec (km/s)')
+plt.plot(x_vir * x_terdekat, y_vir, 'k--',c='black', label="r_200")
+#plt.plot(x_tr*AbellR,y_vir,'k--',c='green', label="r_turnaround")
+plt.title('Plot Akhir')
+plt.legend()
+plt.show()
+
+
+A0279 = CalonA0279[(CalonA0279['jarakp']<=x_terdekat) & (CalonA0279['log'] >= optimal_level)]
+A0279 = A0279.reset_index(drop=True)
+A0279.describe()
+
+
+A0279_akhir = A0279.drop_duplicates(subset='objID', keep='first')
+A0279_akhir.describe()
+
+A0279.to_csv('daftargalaksiA0279.csv', index=False, float_format='%.15f')
