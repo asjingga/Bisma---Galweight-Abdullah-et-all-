@@ -1,0 +1,80 @@
+
+
+h = np.log10(fit1(RR)*fit2(np.abs(VVV))*f(RR,VVV))
+
+plt.subplots(figsize=(12,6))
+lev = np.arange(-1490,-340, 50)
+CS = plt.contour(RR,VVV,h, levels=lev/100,cmap='cool', extend='both')
+plt.clabel(CS, inline=1, fontsize=10)
+plt.scatter(df1['jarakp'],df1['vpec'],c=df1['log'],cmap='bwr')
+plt.colorbar()
+plt.xlabel('Jarak Proyeksi')
+plt.ylabel('Vpec')
+plt.title('Plot Kontur Bobot Total')
+#plt.xlim(-0.01, 4)
+plt.ylim(-2500,2800)
+
+contour_all = get_figcontours(CS, RR, VVV, plot='Yes')
+contour_area = compute_contour_area(contour_all)
+
+contour_area
+
+NDM_setiap_kontur = []
+max_NDM = -np.inf
+optimal_level = None
+
+for i in range (len(lev)):
+    Npos = df1[df1['log']>lev[i]/100]
+    Nneg = df1[df1['log']<lev[i]/100]
+    total_data = len(Npos) - len(Nneg)
+    NDM = (len(Npos)-len(Nneg))/contour_area[i]
+    NDM_setiap_kontur.append(NDM)
+    print(f"Nilai NDM untuk kontur {lev[i]/100} adalah: {NDM_setiap_kontur[i]}")
+
+    if NDM > max_NDM:
+        max_NDM = NDM
+        optimal_level = lev[i]/100
+
+print("")
+print(f"Nilai NDM terbesar adalah: {max_NDM} pada level kontur {optimal_level}")
+
+levels = lev/100
+NDM_values = NDM_setiap_kontur
+data = []
+
+# Loop untuk memasukkan data ke list
+for i in range(len(levels)):
+    data.append([levels[i], NDM_values[i]])
+
+# Membuat DataFrame dari data
+table_NDM = pd.DataFrame(data, columns=["Level Kontur", "Nilai NDM"])
+
+table_NDM
+
+CalonA0279 = df1[(df1['log']>=-optimal_level)]
+len(CalonA0279)
+
+%matplotlib inline
+plt.subplots(figsize=(12,6))
+levels = [optimal_level]
+y_vir = np.linspace(-2000,2000,100)
+x_vir = np.ones(100)
+x_tr = np.ones(100)
+CS = plt.contour(RR,VVV,h,levels=levels)
+plt.clabel(CS, inline=1, fontsize=10)
+plt.scatter(df1['jarakp'], df1['vpec'])
+plt.xlabel('Jarak Proyeksi (Mpc)')
+plt.ylabel('Vpec(km/s)')
+
+plt.subplots(figsize=(12,6))
+#lev = np.arange(-13,-2,0.5)
+lev=[optimal_level]
+CS = plt.contour(RR,VVV,h, levels=lev)
+plt.clabel(CS, inline=1, fontsize=10)
+plt.scatter(df1['jarakp'],df1['vpec'],c=df1['log'],cmap='bwr')
+plt.colorbar()
+plt.xlabel('Jarak Proyeksi')
+plt.ylabel('Vpec')
+plt.title('Plot Bobot Total')
+#plt.xlim(-0.01, 4)
+#plt.ylim(-3000,3000)
