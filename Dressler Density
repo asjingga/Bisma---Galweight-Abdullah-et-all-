@@ -1,0 +1,73 @@
+#Penentuan Dressler Density
+
+import numpy as np
+import pandas as pd
+import math
+import matplotlib.pyplot as plt
+from astropy.coordinates import SkyCoord
+import astropy.units as u
+
+# Fungsi untuk menghitung jarak antar galaksi
+def hitung_jarak(ra1, dec1, ra2, dec2):
+    # Membuat koordinat galaksi 1 dan galaksi 2 dalam satuan derajat
+    coord1 = SkyCoord(ra=ra1*u.degree, dec=dec1*u.degree)
+    coord2 = SkyCoord(ra=ra2*u.degree, dec=dec2*u.degree)
+
+    # Menghitung jarak sudut antara dua galaksi
+    return coord1.separation(coord2).deg  # Jarak dalam derajat
+
+#Array kosong untuk menyimpan jarak antar galaksi
+R_ij = np.empty((len(A0279), len(A0279)), dtype=float)
+
+#Mencari jarak setiap galaksi dengan galaksi anggota lain berdasarkan posisi galaksi
+for i in range(len(A0279)):
+    for j in range(len(A0279)):
+        R_ij[i][j] = hitung_jarak(A0279['ra'].iloc[i], A0279['dec'].iloc[i],
+                                          A0279['ra'].iloc[j], A0279['dec'].iloc[j])
+
+# Ubah array jarak antar galaksi ke DataFrame dan jadikan tipe float
+jarakantargalaksi = pd.DataFrame(R_ij)
+jarakantargalaksi_f = jarakantargalaksi.astype(float)
+
+#Cari 10 tetangga terdekat untuk setiap galaksi
+tetanggaterdekat = np.empty(shape=(len(A0279), 11), dtype='float')
+
+for i in range(len(A0279)):
+    # Cari 11 nilai terkecil termasuk jarak ke galaksi itu sendiri
+    data = jarakantargalaksi_f.iloc[i].nsmallest(11).values
+    # Masukkan ke array tetanggaterdekat
+    tetanggaterdekat[i] = data
+
+# Ubah array tetangga terdekat ke DataFrame dan ubah ke tipe float
+tetangga = pd.DataFrame(tetanggaterdekat).astype(float)
+
+# 4. Hitung kerapatan proyeksi (rho) dengan logaritma
+rho = []
+for i in range(len(A0279)):
+    # Jarak ke tetangga terjauh
+    logi = math.log10(10 / (np.pi * (tetangga.iloc[i, 10] ** 2)))
+    rho.append(logi)
+
+# Simpan hasil kerapatan ke dalam DataFrame A0279
+A0279['rho'] = pd.DataFrame(rho)
+A0279 = A0279.reset_index(drop=True)
+
+
+print(A0279['rho'])
+A0279['rho'].to_csv('rho_data.csv', index=False)
+
+plt.subplots(figsize=(12, 6))
+
+plt.hist(A0279['rho'], bins=7, alpha=1, histtype='bar')
+plt.xlabel('log(rho_proj)')
+plt.title('Histogram Kerapatan Proyeksi Gugus Galaksi A0279')
+plt.ylim(0,25)
+plt.show()
+
+plt.subplots(figsize=(12, 6))
+
+plt.hist(A0279['rho'], bins=17, alpha=1, histtype='bar')
+plt.xlabel('log(rho_proj)')
+plt.title('Histogram Kerapatan Proyeksi Gugus Galaksi A0279')
+plt.ylim(0,25)
+plt.show()
