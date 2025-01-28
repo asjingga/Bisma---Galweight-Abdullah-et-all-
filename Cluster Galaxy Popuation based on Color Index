@@ -1,0 +1,137 @@
+
+
+#Mempelajari Evolusi Galaksi
+
+A0279['u-r'] = A0279['u'] - A0279['r']
+
+early = A0279[(A0279['u-r'] >= 2.22)]
+late = A0279[(A0279['u-r'] < 2.22)]
+
+early = early.reset_index(drop=True)
+late = late.reset_index(drop=True)
+
+plt.scatter(early['ra'], early['dec'],label='> 2.22', color='red')
+plt.scatter(late['ra'], late['dec'], label = '< 2.22', color ='blue')
+plt.scatter(rap, decp, marker='+', color='black', label='Pusat')
+plt.ylabel('Dec')
+plt.xlabel('Ra')
+plt.title("Distribusi Ruang A0279 berdasarkan Tipe Galaksi")
+#plt.title('Peta Sebaran Abell 0279')
+plt.legend()
+plt.ylim(0.6,1.5)
+plt.xlim(28.8,29.4)
+
+import plotly.graph_objects as go
+
+# Membuat scatter plot interaktif
+fig = go.Figure()
+
+# Menambahkan scatter plot untuk data early
+fig.add_trace(go.Scatter(
+    x=early['ra'],
+    y=early['dec'],
+    mode='markers',
+    marker=dict(color='red'),
+    name='> 2.22',
+    text=[f'ra: {ra}, dec: {dec}' for ra, dec in zip(early['ra'], early['dec'])],  # Menampilkan ra dan dec
+    hoverinfo='text'  # Menampilkan informasi saat hover
+))
+
+# Menambahkan scatter plot untuk data late
+fig.add_trace(go.Scatter(
+    x=late['ra'],
+    y=late['dec'],
+    mode='markers',
+    marker=dict(color='blue'),
+    name='< 2.22',
+    text=[f'ra: {ra}, dec: {dec}' for ra, dec in zip(late['ra'], late['dec'])],  # Menampilkan ra dan dec
+    hoverinfo='text'
+))
+
+# Menambahkan scatter plot untuk pusat
+fig.add_trace(go.Scatter(
+    x=[rap],
+    y=[decp],
+    mode='markers',
+    marker=dict(color='orange', symbol='circle'),
+    name='Pusat',
+    text=[f'ra: {rap}, dec: {decp}'],
+    hoverinfo='text'
+))
+
+# Menambahkan layout dan pengaturan axis
+fig.update_layout(
+    title='Peta Sebaran Abell 0279',
+    xaxis_title='Ra',
+    yaxis_title='Dec',
+    legend_title='Keterangan',
+    xaxis=dict(range=[28.8, 29.4]),
+    yaxis=dict(range=[0.6, 1.5])
+)
+
+# Menampilkan plot
+fig.show()
+
+
+# Membuat bin untuk radius proyeksi
+bins = np.linspace(A0279['jarakp'].min(), A0279['jarakp'].max(), num=10)
+A0279['binned_Rproyeksi'] = pd.cut(A0279['jarakp'], bins)
+
+# Menghitung fraksi tipe galaksi berdasarkan bin radius proyeksi
+early = A0279[A0279['u-r'] >= 2.22]
+late = A0279[A0279['u-r'] < 2.22]
+
+# Membuat dataframe fraksi galaksi early dan late per bin
+fraksi_early = early.groupby('binned_Rproyeksi').size() / A0279.groupby('binned_Rproyeksi').size()
+fraksi_late = late.groupby('binned_Rproyeksi').size() / A0279.groupby('binned_Rproyeksi').size()
+
+
+import matplotlib.pyplot as plt
+
+# Membuat plot fraksi galaksi early dan late
+plt.figure(figsize=(8, 6))
+plt.plot(bins[:-1], fraksi_early, color='red', label='early type (> 2.22)')
+plt.plot(bins[:-1], fraksi_late, color='blue', label='late type (< 2.22)')
+
+plt.xlabel('Rproyeksi (Mpc)')
+plt.ylabel('Fraksi')
+plt.title('Sebaran tipe galaksi sebagai fungsi dari radius proyeksi')
+plt.legend()
+plt.show()
+
+
+A0279 = A0279.drop_duplicates(subset=['ra', 'dec'])
+A0279.to_csv('daftargalaksiA0279akhir.csv', index=False, float_format='%.15f')
+
+tipegalaksi = pd.read_csv("/content/tipegalaksi.csv")
+tipegalaksi
+
+tipegalaksi = tipegalaksi.rename(columns={'Unnamed: 28': 'tipe_galaksi'})
+tipegalaksi['tipe_galaksi'].replace('starbust', 'starburst', inplace=True)
+
+# Define the colors or markers for each galaxy type
+galaxy_types = ['agn', 'starburst', 'starforming', 'normal']
+colors = ['red', 'blue', 'green', 'purple']  # Assign a color to each galaxy type
+markers = ['o', 'o', 'o', 'o']  # Different markers for each type
+
+# Loop through each galaxy type and plot with corresponding color and marker
+for i, gal_type in enumerate(galaxy_types):
+    subset = tipegalaksi[tipegalaksi['tipe_galaksi'] == gal_type]
+    plt.scatter(subset['ra'], subset['dec'], label=gal_type, color=colors[i], marker=markers[i])
+
+plt.title("Distribusi Ruang A0279 berdasarkan Kelas Galaksi")
+plt.xlabel('RA')
+plt.ylabel('Dec')
+plt.legend(title="Tipe Galaksi")
+
+plt.xlim(28.8,29.4)
+plt.ylim(0.6,1.5)
+plt.show()
+
+# Cari irisan berdasarkan kolom 'id'
+intersection = pd.merge(A0279, tipegalaksi, on='objID')
+
+# Hapus irisan dari B
+B_no_intersection = tipegalaksi[~tipegalaksi['objID'].isin(intersection['objID'])]
+B_no_intersection
+
