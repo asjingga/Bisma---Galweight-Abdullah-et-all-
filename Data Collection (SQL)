@@ -1,0 +1,9 @@
+Select Galaxy.objID, Galaxy.ra, Galaxy.dec, Photoz.z, SpecPhotoAll.z, Photoz.zErr, PhotoObjAll.u, PhotoObjAll.g, PhotoObjAll.r, PhotoObjAll.i, PhotoObjAll.z, PhotoObjAll.err_u, PhotoObjAll.err_g, PhotoObjAll.err_r, PhotoObjAll.err_i, PhotoObjAll.err_z, PhotoObjAll.psfMag_u, PhotoObjAll.psfMag_g, PhotoObjAll.psfMag_r,PhotoObjAll.psfMag_i,PhotoObjAll.psfMag_z into mydb.DataAwalNovember2024
+from Galaxy
+join Photoz
+  on Galaxy.objID = Photoz.objID
+join SpecPhotoAll
+  on Photoz.objID = SpecPhotoAll.objID
+join PhotoObjAll
+  on SpecPhotoAll.objID = PhotoObjAll.objID
+where Galaxy.ra > 28.388981297000417 and Galaxy.ra < 29.825398702999575 and Galaxy.dec > 0.33800129700041903 and Galaxy.dec < 1.774418702999574
